@@ -15,7 +15,7 @@ import torch.nn.functional as F
 import numpy as np
 from scipy import linalg
 from torchvision.models import inception_v3
-from typing import Tuple, Optional
+from typing import Tuple
 from tqdm import tqdm
 
 
@@ -162,20 +162,11 @@ def calculate_precision_recall(real_features: np.ndarray, fake_features: np.ndar
     # Precision: fraction of fake samples inside real manifold
     # For each fake sample, check if it falls within any real sample's k-NN ball
     dists_fake_to_real = torch.cdist(fake_features, real_features, p=2)
-    precision = 0.0
-    for i in range(len(fake_features)):
-        if (dists_fake_to_real[i] <= real_knn_dists).any():
-            precision += 1.0
-    precision /= len(fake_features)
-    
+    precision = (dists_fake_to_real <= real_knn_dists.unsqueeze(0)).any(dim=1).float().mean().item()
+
     # Recall: fraction of real samples covered by fake manifold
     # For each real sample, check if it's within any fake sample's k-NN ball
-    dists_real_to_fake = torch.cdist(real_features, fake_features, p=2)
-    recall = 0.0
-    for i in range(len(real_features)):
-        if (dists_real_to_fake[i] <= fake_knn_dists).any():
-            recall += 1.0
-    recall /= len(real_features)
+    recall = (dists_fake_to_real <= fake_knn_dists.unsqueeze(1)).any(dim=0).float().mean().item()
     
     return float(precision), float(recall)
 
@@ -201,17 +192,14 @@ def calculate_density_coverage(real_features: np.ndarray, fake_features: np.ndar
     
     # For density: count how many fake samples fall into each real sample's k-NN ball
     dists_fake_to_real = torch.cdist(fake_features, real_features, p=2)
-    
-    density_list = []
-    for i in range(len(real_features)):
-        n_fake_in_ball = (dists_fake_to_real[:, i] <= real_knn_dists[i]).sum().item()
-        density_list.append(n_fake_in_ball)
-    
+    in_ball = dists_fake_to_real <= real_knn_dists.unsqueeze(0)  # (M, N)
+    counts = in_ball.sum(dim=0)  # (N,) — fakes per real ball
+
     # Density: average number of fake samples per real sample's k-NN ball
-    density = np.mean(density_list) / k
-    
+    density = counts.float().mean().item() / k
+
     # Coverage: fraction of real samples that have at least one fake sample in k-NN ball
-    coverage = np.mean([1.0 if d > 0 else 0.0 for d in density_list])
+    coverage = (counts > 0).float().mean().item()
     
     return float(density), float(coverage)
 
@@ -219,20 +207,10 @@ def calculate_density_coverage(real_features: np.ndarray, fake_features: np.ndar
 def calculate_inception_score(fake_features: np.ndarray, splits: int = 10) -> Tuple[float, float]:
     """
     Calculate Inception Score
-    
-    Note: This is a simplified version that works with features.
-    Proper IS requires the full Inception model output (class probabilities).
-    
-    Args:
-        fake_features: Generated image features (N, 2048)
-        splits: Number of splits for std calculation
-    Returns:
-        (mean_is, std_is) tuple
+
+    Note: This is a placeholder — proper IS requires softmax outputs from
+    Inception, not pool5 features. Returns (0.0, 0.0) until implemented.
     """
-    # This is a placeholder - proper IS needs softmax outputs
-    # Would need to modify InceptionV3Features to return softmax outputs
-    
-    # For now, return placeholder
     return 0.0, 0.0
 
 

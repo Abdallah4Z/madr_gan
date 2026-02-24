@@ -393,10 +393,8 @@ class ProgressiveReservoirBuffer:
         Doubles capacity every ramp_interval until max_capacity.
         Schedule: 128 → 256 → 512 → 1024 → 2048
         """
-        target = self.initial_capacity
         steps = iteration // self.ramp_interval
-        target = min(self.initial_capacity * (2 ** steps), self.max_capacity)
-        self._current_capacity = int(target)
+        self._current_capacity = int(min(self.initial_capacity * (2 ** steps), self.max_capacity))
 
     def update(self, features: torch.Tensor, importance_weights: Optional[torch.Tensor] = None):
         """
@@ -559,11 +557,7 @@ class EMABandwidthEstimator:
             return self.sigma
 
         n = min(len(buffer_features), n_samples)
-        if n < len(buffer_features):
-            indices = torch.randperm(len(buffer_features))[:n]
-            subset = buffer_features[indices]
-        else:
-            subset = buffer_features
+        subset = buffer_features[torch.randperm(len(buffer_features))[:n]] if n < len(buffer_features) else buffer_features
 
         dists = torch.cdist(subset, subset, p=2)
         dists_flat = dists[dists > 0]
@@ -792,11 +786,7 @@ class MADRGAN(nn.Module):
 
         # Compute epsilon_t as 95th percentile of intra-buffer distances
         n_samples = min(len(buffer_tensor), 200)
-        if n_samples < len(buffer_tensor):
-            indices = torch.randperm(len(buffer_tensor))[:n_samples]
-            buffer_sample = buffer_tensor[indices]
-        else:
-            buffer_sample = buffer_tensor
+        buffer_sample = buffer_tensor[torch.randperm(len(buffer_tensor))[:n_samples]] if n_samples < len(buffer_tensor) else buffer_tensor
 
         dists_buffer = torch.cdist(buffer_sample, buffer_sample, p=2)
         dists_flat = dists_buffer[dists_buffer > 0]
