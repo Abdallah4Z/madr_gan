@@ -1,0 +1,93 @@
+# Ablation study configs for Enhanced MADR-GAN on CIFAR-10
+#
+# Usage with run_experiments.py:
+#   python run_experiments.py --config configs/ablation_cifar10.yaml
+#
+# Each ablation removes exactly ONE enhancement to measure its contribution.
+
+# Shared base config
+base: &base
+  dataset: cifar10
+  img_size: 64
+  max_real_samples: 50000
+  latent_dim: 128
+  base_channels: 128
+  buffer_capacity: 2048
+  buffer_update_interval: 100
+  lambda_max: 1.0
+  tau_recall: 0.80
+  kappa: 10.0
+  beta: 1.0
+  gamma_r1: 10.0
+  num_iterations: 100000
+  batch_size: 128
+  lr_g: 0.0001
+  lr_d: 0.0002
+  num_workers: 4
+  log_interval: 100
+  sample_interval: 1000
+  checkpoint_interval: 10000
+
+# Full enhanced (all 7)
+full_enhanced:
+  <<: *base
+  output_dir: ./outputs/ablation/full_enhanced
+  use_faiss: true
+  use_multiscale: true
+  progressive_buffer: true
+  auto_tau: true
+
+# Ablation 1: No FAISS (brute-force coverage)
+no_faiss:
+  <<: *base
+  output_dir: ./outputs/ablation/no_faiss
+  use_faiss: false
+  use_multiscale: true
+  progressive_buffer: true
+  auto_tau: true
+
+# Ablation 2: No progressive buffer
+no_progressive:
+  <<: *base
+  output_dir: ./outputs/ablation/no_progressive
+  use_faiss: true
+  use_multiscale: true
+  progressive_buffer: false
+  auto_tau: true
+
+# Ablation 3: No multi-scale features (DINO only)
+no_multiscale:
+  <<: *base
+  output_dir: ./outputs/ablation/no_multiscale
+  use_faiss: true
+  use_multiscale: false
+  progressive_buffer: true
+  auto_tau: true
+
+# Ablation 4: No auto tau (manual tau_recall=0.80)
+no_auto_tau:
+  <<: *base
+  output_dir: ./outputs/ablation/no_auto_tau
+  use_faiss: true
+  use_multiscale: true
+  progressive_buffer: true
+  auto_tau: false
+
+# Baseline: original MADR-GAN (no enhancements)
+original:
+  <<: *base
+  output_dir: ./outputs/ablation/original
+  use_faiss: false
+  use_multiscale: false
+  progressive_buffer: false
+  auto_tau: false
+
+# Vanilla GAN baseline (lambda_max=0, no coverage)
+vanilla:
+  <<: *base
+  output_dir: ./outputs/ablation/vanilla
+  lambda_max: 0.0
+  use_faiss: false
+  use_multiscale: false
+  progressive_buffer: false
+  auto_tau: false

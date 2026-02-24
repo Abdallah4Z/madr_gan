@@ -1,0 +1,36 @@
+# Dataset
+dataset: stacked_mnist
+img_size: 64
+max_real_samples: 50000
+
+# Model Architecture
+latent_dim: 128
+base_channels: 128
+
+# MADR-GAN Hyperparameters
+buffer_capacity: 2048
+buffer_update_interval: 100
+lambda_max: 1.0
+tau_recall: 0.85  # Higher target for mode coverage benchmark
+kappa: 10.0
+beta: 1.0
+gamma_r1: 10.0
+
+# Training
+num_iterations: 200000  # Longer training for mode coverage
+batch_size: 128
+lr_g: 0.0001
+lr_d: 0.0002
+num_workers: 4
+
+# Logging and Checkpointing
+output_dir: ./outputs/stacked_mnist
+log_interval: 100
+sample_interval: 1000
+checkpoint_interval: 10000
+
+# Evaluation
+eval_num_samples: 50000
+eval_batch_size: 50
+eval_k_neighbors: 3
+eval_mode_count: true  # Special evaluation for Stacked MNIST
